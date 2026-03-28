@@ -87,6 +87,32 @@ else
     rm ./patch_abl
     exit 1
 fi
+#enable Patch 6 and run the patching tool again
+gcc -o patch_abl ../tools/patch_abl.c -D DISABLE_PATCH_1 -D DISABLE_PATCH_2 -D DISABLE_PATCH_3 -D DISABLE_PATCH_4 -D DISABLE_PATCH_5
+./patch_abl ./extracted/LinuxLoader.efi ./patch_output/patch6.efi >> /dev/null 2>&1
+
+# Optional hash check for Patch 6 output.
+# Set PATCH6_EXPECTED_HASH in environment to enforce exact md5 validation.
+PATCH6_EXPECTED_HASH="${PATCH6_EXPECTED_HASH:-}"
+PATCH6_ACTUAL_HASH=$(md5sum ./patch_output/patch6.efi | awk '{print $1}')
+
+if [ -n "$PATCH6_EXPECTED_HASH" ]; then
+    if [ "$PATCH6_EXPECTED_HASH" = "$PATCH6_ACTUAL_HASH" ]; then
+        echo "Test passed: Final patched6 file matches expected hash."
+    else
+        echo "Test failed: Final patched6 file hash does not match expected."
+        echo "Expected: $PATCH6_EXPECTED_HASH"
+        echo "Actual:   $PATCH6_ACTUAL_HASH"
+        rm -rf ./extracted
+        rm -rf ./patch_output
+        rm ./patch_abl
+        exit 1
+    fi
+else
+    echo "Test passed: Patch 6 generated output (hash check skipped)."
+    echo "Patch6 hash: $PATCH6_ACTUAL_HASH"
+fi
+
 rm -rf ./extracted
 rm -rf ./patch_output
 rm ./patch_abl

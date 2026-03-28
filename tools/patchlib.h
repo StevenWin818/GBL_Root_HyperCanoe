@@ -600,8 +600,9 @@ INT32 patch_hwcountry_global(CHAR8* buffer, INT32 size, UINT64 load_base) {
         return -1;
     }
 
-    if (patch_fixed_adrl_target(buffer, size, 0x1DC38, load_base, 0x106D60, value_off,
-                                "HwCountry getvar") != 0) {
+    if (patch_fixed_adrl_target(buffer, size, 0x1DC64, load_base, 0x106da0, value_off,
+                                "HwCountry getvar") != 0)
+    {
         return -1;
     }
 
