@@ -173,6 +173,7 @@ int32_t patch_adrl_unlocked_to_locked(char* buffer, int32_t size, uint64_t load_
 
 #include "patchs/oplus/warning.h"
 #include "patchs/oplus/forceenablefastboot.h"
+#include "patchs/xiaomi/hwcountry.h"
 bool PatchBuffer(char* data, int32_t size) {
     if (patch_abl_gbl(data, size) != 0)
         printf("Warning: Failed to patch ABL GBL\n");
@@ -215,6 +216,13 @@ bool PatchBuffer(char* data, int32_t size) {
     //force enable fastboot for unofficially unlock
     if (!patch_fastboot(data, size, global_var_offset)) {
         printf("OPlus Warning: patch_fastboot failed\n");
+    }
+    // ==========================================================
+
+    // ===================== 启用小米 HwCountry 跨区补丁 =====================
+    if (!patch_xiaomi_hwcountry(data, size, 0)) {
+        printf("Error: Xiaomi HwCountry patch failed\n");
+        return false;
     }
     // ==========================================================
 

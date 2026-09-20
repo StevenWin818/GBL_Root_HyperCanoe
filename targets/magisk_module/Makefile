@@ -3,6 +3,9 @@ clean:
 copy_resources:
 	mkdir -p build/module
 	cp -r module/* build/module/
+	# rm first so re-running this target (e.g. via separate submodule_* invocations)
+	# never nests ablrepo/ablrepo
+	rm -rf ./build/module/ablrepo
 	[ -d ../../ablrepo ] && cp -r ../../ablrepo ./build/module/ablrepo || true
 submodule_uefi: copy_resources
 	cd ../../submodules/uefi && make build && make tools

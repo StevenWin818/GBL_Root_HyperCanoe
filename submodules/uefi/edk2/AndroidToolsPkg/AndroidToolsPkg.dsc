@@ -83,6 +83,10 @@
 [BuildOptions]
   *_CLANG35_AARCH64_DLINK_FLAGS = -Wl,-Ttext=0x0
   *_CLANG35_AARCH64_DLINK_FLAGS = $(CLANG_EXTRA_DLINK_FLAGS)
+  # Distributions patching clang to default to -fstack-protector-strong break the
+  # freestanding link (__stack_chk_guard/__stack_chk_fail undefined under -nostdlib).
+  # Disable it explicitly; upstream edk2 apps do not use stack protectors.
+  *_CLANG35_AARCH64_CC_FLAGS = -fno-stack-protector
 
 ################################################################################
 #
