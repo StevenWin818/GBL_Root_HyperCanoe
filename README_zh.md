@@ -1,3 +1,24 @@
+# GBL_Root_HyperCanoe
+
+基于 GBL_Root_Canoe 的 HyperOS 底层补丁工具：通过修改 `efisp` 分区，绕过跨区刷机验证并伪装 Bootloader 状态。
+
+**警告：本项目仅供底层安全研究与技术学习使用，请勿用于非法用途。修改底层固件具有极高的风险，使用者需自行承担一切后果（包括但不限于设备损坏）。**
+
+## 项目简介
+
+`GBL_Root_HyperCanoe` 是构建在 EDK2 与高通 GBL/UEFI 漏洞利用链基础上的高级固件热补丁工具。针对搭载小米 HyperOS 的高通平台设备，本项目彻底解决了跨区域刷机时的底层硬件锁机问题，并实现了系统级的权限欺骗。
+
+## 核心特性与解决痛点
+
+* **跨区通行证 (Region Lock Override)**：通过自动化特征码扫描，自动拦截并将 `HwCountry` 硬件区域指针重定向至 `GLOBAL`。绕过国行设备（CN）刷入欧洲版/国际版（EEA/Global）系统时，Recovery 弹出的 "This System version can not be installed on this devices" 拦截。
+* **底层状态伪装 (Bootloader Spoofing)**：通过修改底层的 `unlocked` 特征码与栈数据流，强制篡改 ABL 向上层系统与 TEE 传递的 Verified Boot 状态。向操作系统汇报虚假的 `locked` 状态，协助设备通过极其严格的 Google Play 强完整性认证（STRONG_INTEGRITY）。
+
+## 受影响的硬件平台
+
+本项目主要针对搭载 `efisp` 分区的最新高通平台设备小米设备跨区刷机开发，兼容的测试设备包括：
+
+* Xiaomi 17 系列
+
 # GBL Root Canoe
 
 [English](README.md)

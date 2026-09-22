@@ -1,3 +1,24 @@
+# GBL_Root_HyperCanoe
+
+A HyperOS low-level patching tool based on GBL_Root_Canoe: By modifying the `efisp` partition, it bypasses cross-partition flashing verification and spoofs the bootloader status.
+
+**Warning: This project is intended solely for low-level security research and technical learning. Do not use it for illegal purposes. Modifying low-level firmware carries extremely high risks, and users must assume full responsibility for all consequences (including but not limited to device damage).**
+
+## Project Overview
+
+`GBL_Root_HyperCanoe` is an advanced firmware hot-patching tool built on the EDK2 and Qualcomm GBL/UEFI exploit chains. For Qualcomm-based devices running Xiaomi HyperOS, this project completely resolves the low-level hardware lockout issue during cross-region flashing and enables system-level privilege spoofing.
+
+## Key Features and Pain Points Addressed
+
+* **Region Lock Override**: Through automated signature scanning, it automatically intercepts and redirects the `HwCountry` hardware region pointer to `GLOBAL`. This bypasses the “This System version cannot be installed on this device” error message displayed by Recovery when flashing a European/Global (EEA/Global) system onto a China-specific (CN) device.
+* **Low-Level Status Spoofing (Bootloader Spoofing)**: By modifying the low-level `unlocked` signature and stack data flow, it forcibly alters the Verified Boot status that the ABL transmits to the upper-level system and TEE. It reports a false `locked` status to the operating system, helping the device pass Google Play’s extremely strict Strong Integrity verification (STRONG_INTEGRITY).
+
+## Affected Hardware Platforms
+
+This project is primarily designed for cross-region flashing of Xiaomi devices running on the latest Qualcomm platforms equipped with an `efisp` partition. Compatible test devices include:
+
+* Xiaomi 17 series
+
 # GBL Root Canoe
 
 [中文版](README_zh.md)
