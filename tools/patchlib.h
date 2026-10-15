@@ -579,6 +579,84 @@ static INT32 patch_first_adrl_by_string(CHAR8* buffer, INT32 size, UINT64 load_b
     return -1;
 }
 
+/*
+ * 自动定位 HwCountry 数据地址及其 getvar 引用的 ADRP+ADD 位置。
+ * 成功返回 0，失败返回 -1。
+ */
+static INT32 auto_find_hwcountry_ptrs(CHAR8* buffer, INT32 size, UINT64 load_base,
+                                      INT32* out_adrp_off, INT64* out_data_off) {
+    if (out_adrp_off == 0 || out_data_off == 0) return -1;
+    *out_adrp_off = -1;
+    *out_data_off = -1;
+
+    INT64 str_off = find_cstring(buffer, size, "HwCountry: %a");
+    if (str_off < 0) {
+        Print_patcher("Auto-detect: string \"HwCountry: %%a\" not found\n");
+        return -1;
+    }
+
+    INT32 fmt_adrp_off = -1;
+    for (INT32 i = 0; i <= size - 8; i += 4) {
+        if (calc_adrl_file_offset(buffer, i, load_base) == str_off) {
+            fmt_adrp_off = i;
+            break;
+        }
+    }
+    if (fmt_adrp_off < 0) {
+        Print_patcher("Auto-detect: reference to \"HwCountry: %%a\" not found\n");
+        return -1;
+    }
+
+    UINT8 base_reg = 0xFF;
+    UINT32 add_imm = 0;
+    INT32 scan_end = fmt_adrp_off + 32;
+    if (scan_end > size - 4) scan_end = size - 4;
+
+    for (INT32 i = fmt_adrp_off; i <= scan_end; i += 4) {
+        DecodedInst d = decode_at(buffer, i);
+        if (d.type == INST_ADD_X_IMM && d.rt == 3) {
+            base_reg = d.rn;
+            add_imm = d.imm;
+            break;
+        }
+    }
+    if (base_reg == 0xFF) {
+        Print_patcher("Auto-detect: ADD to X3 not found near format usage\n");
+        return -1;
+    }
+
+    INT64 base_val = -1;
+    for (INT32 i = fmt_adrp_off; i >= 0; i -= 4) {
+        DecodedInst d0 = decode_at(buffer, i);
+        DecodedInst d1 = decode_at(buffer, i + 4);
+        if (d0.type == INST_ADRP && d1.type == INST_ADD_X_IMM
+            && d0.rt == base_reg && d1.rt == base_reg && d1.rn == base_reg) {
+            base_val = calc_adrl_file_offset(buffer, i, load_base);
+            break;
+        }
+    }
+    if (base_val < 0) {
+        Print_patcher("Auto-detect: base register assignment not found\n");
+        return -1;
+    }
+
+    INT64 data_off = base_val + add_imm;
+    *out_data_off = data_off;
+
+    for (INT32 i = 0; i <= size - 8; i += 4) {
+        if (calc_adrl_file_offset(buffer, i, load_base) == data_off) {
+            *out_adrp_off = i;
+            Print_patcher("Auto-detect: getvar ADRP found at 0x%X, data file off 0x%llX\n",
+                          i, (unsigned long long)data_off);
+            return 0;
+        }
+    }
+
+    Print_patcher("Auto-detect: final ADRP reference for data off 0x%llX not found\n",
+                  (unsigned long long)data_off);
+    return -1;
+}
+
 INT32 patch_hwcountry_global(CHAR8* buffer, INT32 size, UINT64 load_base) {
     const CHAR8 hwcountry_value[] = "GLOBAL";
     const CHAR8 hwcountry_line[]  = "HwCountry: GLOBAL";
@@ -600,8 +678,16 @@ INT32 patch_hwcountry_global(CHAR8* buffer, INT32 size, UINT64 load_base) {
         return -1;
     }
 
-    if (patch_fixed_adrl_target(buffer, size, 0x1DC64, load_base, 0x106da0, value_off,
-                                "HwCountry getvar") != 0)
+    INT32 target_adrp_off = -1;
+    INT64 target_data_off = -1;
+    if (auto_find_hwcountry_ptrs(buffer, size, load_base,
+                                 &target_adrp_off, &target_data_off) != 0) {
+        Print_patcher("HwCountry patch: failed to auto-locate getvar pointer\n");
+        return -1;
+    }
+
+    if (patch_fixed_adrl_target(buffer, size, target_adrp_off, load_base,
+                                target_data_off, value_off, "HwCountry getvar") != 0)
     {
         return -1;
     }
